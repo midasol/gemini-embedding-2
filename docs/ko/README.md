@@ -168,6 +168,31 @@ npx tsx src/scripts/setup-db.ts
 
 ---
 
+## 지원 파일 포맷
+
+> [Gemini Embedding 2 공식 문서](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/embedding-2) 기준.
+
+### Gemini Embedding API 지원 포맷
+
+| 카테고리 | MIME 타입 | 제한사항 | 처리 방식 |
+|----------|----------|---------|----------|
+| 텍스트 | 일반 텍스트 | 최대 8,192 토큰 | 청킹 (2000자, 200자 오버랩) 후 청크별 임베딩 |
+| PDF | `application/pdf` | 요청당 최대 6페이지, 1파일 | pdf-lib로 6페이지 단위 분할, 멀티모달 임베딩 + 텍스트 추출 + AI 요약 |
+| 이미지 | `image/png`, `image/jpeg` | 요청당 최대 6개 | Base64 inlineData, 멀티모달 임베딩 + AI 요약 |
+| 오디오 | `audio/mp3`, `audio/wav` | 최대 80초, 요청당 1파일 | Base64 inlineData, 멀티모달 임베딩 + AI 요약 |
+| 비디오 | `video/mpeg`, `video/mp4` | 오디오 포함 시 80초 / 미포함 시 120초, 요청당 1파일 | Base64 inlineData, 멀티모달 임베딩 + AI 요약 |
+
+### 앱에서 추가로 수용하는 포맷
+
+| 카테고리 | 확장자 | 비고 |
+|----------|--------|------|
+| 텍스트 | `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.html` | 텍스트 추출 후 청킹, 텍스트 임베딩 |
+| 이미지 | `.gif`, `.webp`, `.bmp` | 업로드/저장만 가능 -- Gemini Embedding API 미지원 |
+| 오디오 | `.ogg`, `.flac`, `.m4a` | 업로드/저장만 가능 -- Gemini Embedding API 미지원 |
+| 비디오 | `.webm`, `.avi`, `.mov` | 업로드/저장만 가능 -- Gemini Embedding API 미지원 |
+
+---
+
 ## 관련 문서
 
 - [아키텍처](./ARCHITECTURE.md) - 시스템 아키텍처 및 Mermaid 다이어그램

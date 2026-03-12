@@ -356,13 +356,32 @@ Expected result:
 
 ## Supported File Formats
 
-| Category | Extensions | Processing Method |
-|----------|-----------|-------------------|
-| Text | `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.html` | Text extraction → Chunking → Embedding |
-| PDF | `.pdf` | PDF parsing → Text extraction → Chunking → Embedding |
-| Image | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.bmp` | Base64 → Multimodal embedding + AI summary |
-| Audio | `.mp3`, `.wav`, `.ogg`, `.flac`, `.m4a` | Base64 → Multimodal embedding + AI summary |
-| Video | `.mp4`, `.webm`, `.avi`, `.mov` | Base64 → Multimodal embedding + AI summary |
+> Based on the official [Gemini Embedding 2 documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/embedding-2).
+
+### Gemini Embedding API Supported Formats
+
+These formats are directly supported by the `gemini-embedding-2-preview` multimodal embedding API:
+
+| Category | MIME Types | Restrictions | Processing Method |
+|----------|-----------|-------------|-------------------|
+| Text | Plain text | Max 8,192 tokens | Chunking (2000 chars, 200 overlap) → Embedding per chunk |
+| PDF | `application/pdf` | Max 6 pages per request, 1 file per request | Split into 6-page chunks (pdf-lib) → Multimodal embedding + text extraction + AI summary |
+| Image | `image/png`, `image/jpeg` | Max 6 images per request | Base64 inlineData → Multimodal embedding + AI summary |
+| Audio | `audio/mp3`, `audio/wav` | Max 80 seconds, 1 file per request | Base64 inlineData → Multimodal embedding + AI summary |
+| Video | `video/mpeg`, `video/mp4` | Max 80s (with audio) / 120s (without audio), 1 file per request | Base64 inlineData → Multimodal embedding + AI summary |
+
+### Additional App-Supported Formats
+
+The app accepts these additional formats for text extraction and storage, but they are processed as text (not multimodal embedding):
+
+| Category | Extensions | Notes |
+|----------|-----------|-------|
+| Text | `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.html` | Extracted as text → chunked → text embedding |
+| Image | `.gif`, `.webp`, `.bmp` | Accepted for upload/storage but not supported by Gemini Embedding API |
+| Audio | `.ogg`, `.flac`, `.m4a` | Accepted for upload/storage but not supported by Gemini Embedding API |
+| Video | `.webm`, `.avi`, `.mov` | Accepted for upload/storage but not supported by Gemini Embedding API |
+
+> **Note:** The `validateForEmbedding()` function in `file-parser.ts` validates files against the Gemini Embedding API restrictions before processing. Unsupported formats will be rejected at embedding time.
 
 ---
 

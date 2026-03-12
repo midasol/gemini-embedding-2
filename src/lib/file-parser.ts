@@ -1,13 +1,13 @@
 const TEXT_EXTENSIONS = ['.txt', '.md', '.csv', '.json', '.xml', '.html'];
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'];
 const AUDIO_EXTENSIONS = ['.mp3', '.wav', '.ogg', '.flac', '.m4a'];
-const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.avi', '.mov'];
+const VIDEO_EXTENSIONS = ['.mp4', '.mpeg', '.webm', '.avi', '.mov'];
 const PDF_EXTENSIONS = ['.pdf'];
 
 export type FileCategory = 'text' | 'pdf' | 'image' | 'audio' | 'video';
 
 // Gemini Embedding API restrictions
-// https://ai.google.dev/gemini-api/docs/embeddings
+// https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/embedding-2
 export const EMBEDDING_LIMITS = {
   image: {
     formats: ['.png', '.jpg', '.jpeg'] as string[],
@@ -20,10 +20,10 @@ export const EMBEDDING_LIMITS = {
     description: 'MP3, WAV (max 80 seconds)',
   },
   video: {
-    formats: ['.mp4', '.mov'] as string[],
-    maxDurationSec: 128,
-    codecs: ['H264', 'H265', 'AV1', 'VP9'],
-    description: 'MP4, MOV (max 128 seconds, H264/H265/AV1/VP9)',
+    formats: ['.mp4', '.mpeg'] as string[],
+    maxDurationSecWithAudio: 80,
+    maxDurationSecWithoutAudio: 120,
+    description: 'MP4, MPEG (max 80s with audio / 120s without audio)',
   },
   pdf: {
     maxPages: 6,
@@ -84,7 +84,7 @@ export function getMimeType(fileName: string): string {
     '.gif': 'image/gif', '.webp': 'image/webp', '.bmp': 'image/bmp',
     '.mp3': 'audio/mpeg', '.wav': 'audio/wav', '.ogg': 'audio/ogg',
     '.flac': 'audio/flac', '.m4a': 'audio/mp4',
-    '.mp4': 'video/mp4', '.webm': 'video/webm', '.avi': 'video/x-msvideo', '.mov': 'video/quicktime',
+    '.mp4': 'video/mp4', '.mpeg': 'video/mpeg', '.webm': 'video/webm', '.avi': 'video/x-msvideo', '.mov': 'video/quicktime',
   };
   return mimeMap[ext] ?? 'application/octet-stream';
 }

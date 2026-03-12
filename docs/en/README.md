@@ -169,6 +169,29 @@ npm run db:setup
 
 For detailed API documentation, see [API.md](./API.md).
 
+## Supported File Formats
+
+> Based on the official [Gemini Embedding 2 documentation](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/embedding-2).
+
+### Gemini Embedding API Supported Formats
+
+| Category | MIME Types | Restrictions | Processing Method |
+|----------|-----------|-------------|-------------------|
+| Text | Plain text | Max 8,192 tokens | Chunking (2000 chars, 200 overlap) per chunk |
+| PDF | `application/pdf` | Max 6 pages, 1 file/request | Split into 6-page chunks (pdf-lib), multimodal embedding + text extraction + AI summary |
+| Image | `image/png`, `image/jpeg` | Max 6 images/request | Base64 inlineData, multimodal embedding + AI summary |
+| Audio | `audio/mp3`, `audio/wav` | Max 80 seconds, 1 file/request | Base64 inlineData, multimodal embedding + AI summary |
+| Video | `video/mpeg`, `video/mp4` | Max 80s (with audio) / 120s (without), 1 file/request | Base64 inlineData, multimodal embedding + AI summary |
+
+### Additional App-Accepted Formats
+
+| Category | Extensions | Notes |
+|----------|-----------|-------|
+| Text | `.txt`, `.md`, `.csv`, `.json`, `.xml`, `.html` | Extracted as text, chunked, text embedding |
+| Image | `.gif`, `.webp`, `.bmp` | Upload/storage only -- not supported by Gemini Embedding API |
+| Audio | `.ogg`, `.flac`, `.m4a` | Upload/storage only -- not supported by Gemini Embedding API |
+| Video | `.webm`, `.avi`, `.mov` | Upload/storage only -- not supported by Gemini Embedding API |
+
 ## Related Documentation
 
 - [Architecture](./ARCHITECTURE.md) -- System design, data flows, and diagrams
