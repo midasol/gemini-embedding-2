@@ -5,17 +5,38 @@ import { ChatSidebar } from '@/components/ChatSidebar';
 import { ChatWindow } from '@/components/ChatWindow';
 import { ChatInput } from '@/components/ChatInput';
 
+interface Attachment {
+  type: string;
+  path: string;
+  fileName: string;
+  similarity: number;
+}
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  attachments?: Array<{ type: string; path: string; fileName: string; similarity: number }>;
+  attachments?: Attachment[];
+}
+
+function parseStreamChunk(raw: string): { attachments: Attachment[]; text: string } {
+  const attachmentsMatch = raw.match(/^__ATTACHMENTS__(.+?)__END_ATTACHMENTS__([\s\S]*)$/);
+  if (attachmentsMatch) {
+    try {
+      const attachments = JSON.parse(attachmentsMatch[1]) as Attachment[];
+      return { attachments, text: attachmentsMatch[2] };
+    } catch {
+      return { attachments: [], text: raw };
+    }
+  }
+  return { attachments: [], text: raw };
 }
 
 export default function ChatPage() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [streaming, setStreaming] = useState('');
+  const [streamingAttachments, setStreamingAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(false);
 
   const loadMessages = useCallback(async (id: string) => {
@@ -36,7 +57,6 @@ export default function ChatPage() {
   }
 
   async function handleSend(message: string, file?: File) {
-    // Check if this is an embedding request
     if (file && message.includes('embedding')) {
       const formData = new FormData();
       formData.append('file', file);
@@ -60,6 +80,7 @@ export default function ChatPage() {
     setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'user', content: message }]);
     setLoading(true);
     setStreaming('');
+    setStreamingAttachments([]);
 
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -69,20 +90,35 @@ export default function ChatPage() {
 
     const reader = res.body?.getReader();
     const decoder = new TextDecoder();
-    let fullText = '';
+    let fullRaw = '';
+    let currentAttachments: Attachment[] = [];
 
     if (reader) {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value);
-        fullText += chunk;
-        setStreaming(fullText);
+        fullRaw += decoder.decode(value);
+        const { attachments, text } = parseStreamChunk(fullRaw);
+        if (attachments.length > 0) {
+          currentAttachments = attachments;
+          setStreamingAttachments(attachments);
+        }
+        setStreaming(text);
       }
     }
 
+    const { text: finalText } = parseStreamChunk(fullRaw);
     setStreaming('');
-    setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'assistant', content: fullText }]);
+    setStreamingAttachments([]);
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: finalText,
+        attachments: currentAttachments.length > 0 ? currentAttachments : undefined,
+      },
+    ]);
     setLoading(false);
   }
 
@@ -97,7 +133,11 @@ export default function ChatPage() {
         <header className="border-b px-6 py-3 font-semibold">
           Gemini RAG Chat
         </header>
-        <ChatWindow messages={messages} streamingContent={streaming || undefined} />
+        <ChatWindow
+          messages={messages}
+          streamingContent={streaming || undefined}
+          streamingAttachments={streamingAttachments.length > 0 ? streamingAttachments : undefined}
+        />
         <ChatInput onSend={handleSend} disabled={loading} />
       </div>
     </div>

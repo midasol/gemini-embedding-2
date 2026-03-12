@@ -63,8 +63,30 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    const response = result.toTextStreamResponse();
+    // Create a custom stream that prepends attachments as JSON, then streams text
+    const encoder = new TextEncoder();
+    const textStream = result.textStream;
 
+    const stream = new ReadableStream({
+      async start(controller) {
+        // Send attachments as first chunk with a special prefix
+        if (attachments.length > 0) {
+          controller.enqueue(encoder.encode(`__ATTACHMENTS__${JSON.stringify(attachments)}__END_ATTACHMENTS__`));
+        }
+
+        try {
+          for await (const chunk of textStream) {
+            controller.enqueue(encoder.encode(chunk));
+          }
+        } catch (err) {
+          console.error('Stream error:', err);
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    // Save assistant response after streaming
     Promise.resolve(result.text).then(async (fullText) => {
       await db.insert(messages).values({
         conversationId,
@@ -84,7 +106,9 @@ export async function POST(req: NextRequest) {
       console.error('Failed to save assistant message:', err);
     });
 
-    return response;
+    return new Response(stream, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
   } catch (err) {
     console.error('POST /api/chat error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
