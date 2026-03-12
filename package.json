@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:setup": "tsx src/scripts/setup-db.ts",
+    "pipeline": "tsx src/scripts/pipeline.ts"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
