@@ -1,5 +1,4 @@
-import pdf from 'pdf-parse';
-
+/* eslint-disable @typescript-eslint/no-explicit-any */
 const TEXT_EXTENSIONS = ['.txt', '.md', '.csv', '.json', '.xml', '.html'];
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'];
 const AUDIO_EXTENSIONS = ['.mp3', '.wav', '.ogg', '.flac', '.m4a'];
@@ -34,8 +33,11 @@ export function getMimeType(fileName: string): string {
 }
 
 export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  const data = await pdf(buffer);
-  return data.text;
+  const { PDFParse } = await import('pdf-parse') as any;
+  const parser = new PDFParse({ data: new Uint8Array(buffer) });
+  await parser.load();
+  const result = await parser.getText();
+  return String(result);
 }
 
 export function chunkText(text: string, maxChunkSize = 2000, overlap = 200): string[] {
