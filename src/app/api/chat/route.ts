@@ -1,8 +1,10 @@
-import { google } from '@ai-sdk/google';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { searchSimilar, buildRAGPrompt } from '@/lib/rag';
 import { env } from '@/lib/env';
+
+const google = createGoogleGenerativeAI({ apiKey: env.GEMINI_API_KEY });
 import { db } from '@/lib/db';
 import { messages, conversations } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
@@ -47,11 +49,13 @@ export async function POST(req: NextRequest) {
       content: message,
     });
 
+    const MIN_MEDIA_SIMILARITY = 0.4;
+    const SIMILARITY_RATIO = 0.95;
+
     const mediaResults = searchResults
-      .filter((r) => ['image', 'video'].includes(r.fileType))
+      .filter((r) => ['image', 'video'].includes(r.fileType) && r.similarity >= MIN_MEDIA_SIMILARITY)
       .sort((a, b) => b.similarity - a.similarity);
 
-    const SIMILARITY_RATIO = 0.95;
     const topSimilarity = mediaResults[0]?.similarity ?? 0;
     const threshold = topSimilarity * SIMILARITY_RATIO;
 
@@ -88,7 +92,7 @@ export async function POST(req: NextRequest) {
             controller.enqueue(encoder.encode(chunk));
           }
         } catch (err) {
-          console.error('Stream error:', err);
+          console.error('Stream error:', err instanceof Error ? err.message : 'Unknown error');
         } finally {
           controller.close();
         }
@@ -112,14 +116,14 @@ export async function POST(req: NextRequest) {
           .where(eq(conversations.id, conversationId));
       }
     }).catch((err: unknown) => {
-      console.error('Failed to save assistant message:', err);
+      console.error('Failed to save assistant message:', err instanceof Error ? err.message : 'Unknown error');
     });
 
     return new Response(stream, {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     });
   } catch (err) {
-    console.error('POST /api/chat error:', err);
+    console.error('POST /api/chat error:', err instanceof Error ? err.message : 'Unknown error');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

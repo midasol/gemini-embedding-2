@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
       chunksCreated: result.chunksCreated,
     });
   } catch (err) {
-    console.error('POST /api/embed error:', err);
+    console.error('POST /api/embed error:', err instanceof Error ? err.message : 'Unknown error');
     return NextResponse.json({ error: 'Failed to embed file' }, { status: 500 });
   }
 }

@@ -25,6 +25,7 @@ interface ChatWindowProps {
   streamingContent?: string;
   streamingAttachments?: Attachment[];
   loading?: boolean;
+  loadingType?: 'chat' | 'embedding';
 }
 
 function AttachmentGrid({ attachments }: { attachments: Attachment[] }) {
@@ -66,7 +67,8 @@ function UserMessage({ content }: { content: string }) {
   );
 }
 
-function ThinkingIndicator() {
+function ThinkingIndicator({ type = 'chat' }: { type?: 'chat' | 'embedding' }) {
+  const label = type === 'embedding' ? '임베딩 처리 중...' : '검색하고 있어요...';
   return (
     <div className="flex items-start gap-3">
       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -78,7 +80,7 @@ function ThinkingIndicator() {
           <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '0ms' }} />
           <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '150ms' }} />
           <span className="w-2 h-2 rounded-full bg-primary/40 animate-bounce" style={{ animationDelay: '300ms' }} />
-          <span className="ml-2 text-sm text-muted-foreground">검색하고 있어요...</span>
+          <span className="ml-2 text-sm text-muted-foreground">{label}</span>
         </div>
       </div>
     </div>
@@ -102,7 +104,7 @@ function AssistantMessage({ content, attachments }: { content: string; attachmen
   );
 }
 
-export function ChatWindow({ messages, streamingContent, streamingAttachments, loading }: ChatWindowProps) {
+export function ChatWindow({ messages, streamingContent, streamingAttachments, loading, loadingType }: ChatWindowProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -132,7 +134,7 @@ export function ChatWindow({ messages, streamingContent, streamingAttachments, l
             )}
           </div>
         ))}
-        {loading && !streamingContent && <ThinkingIndicator />}
+        {loading && !streamingContent && <ThinkingIndicator type={loadingType} />}
         {streamingContent && (
           <AssistantMessage
             content={streamingContent}

@@ -7,7 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Play } from 'lucide-react';
+import { Play, FolderOpen } from 'lucide-react';
 
 interface PipelineStatus {
   running: boolean;
@@ -23,6 +23,7 @@ export function PipelineDashboard() {
   const [sourcePath, setSourcePath] = useState('');
   const [status, setStatus] = useState<PipelineStatus | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const folderInputRef = useRef<HTMLInputElement>(null);
 
   async function startPipeline() {
     await fetch('/api/pipeline/start', {
@@ -31,6 +32,25 @@ export function PipelineDashboard() {
       body: JSON.stringify({ sourcePath }),
     });
     startPolling();
+  }
+
+  async function handleFolderSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const formData = new FormData();
+    for (let i = 0; i < files.length; i++) {
+      formData.append('files', files[i]);
+    }
+
+    await fetch('/api/pipeline/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    startPolling();
+
+    // Reset input so the same folder can be selected again
+    if (folderInputRef.current) folderInputRef.current.value = '';
   }
 
   function startPolling() {
@@ -52,21 +72,46 @@ export function PipelineDashboard() {
   }, []);
 
   const progress = status ? (status.total > 0 ? (status.completed / status.total) * 100 : 0) : 0;
+  const isRunning = status?.running ?? false;
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
       <h1 className="text-2xl font-bold">배치 Embedding 파이프라인</h1>
 
-      <div className="flex gap-2">
-        <Input
-          value={sourcePath}
-          onChange={(e) => setSourcePath(e.target.value)}
-          placeholder="소스 경로 (로컬 폴더 또는 GCS 버킷)"
-          className="flex-1"
-        />
-        <Button onClick={startPipeline} disabled={!sourcePath || status?.running}>
-          <Play className="mr-2 h-4 w-4" /> 시작
-        </Button>
+      <div className="space-y-3">
+        <div className="flex gap-2">
+          <Input
+            value={sourcePath}
+            onChange={(e) => setSourcePath(e.target.value)}
+            placeholder="GCS 경로 (예: gs://bucket/prefix)"
+            className="flex-1"
+            disabled={isRunning}
+          />
+          <Button onClick={startPipeline} disabled={!sourcePath || isRunning}>
+            <Play className="mr-2 h-4 w-4" /> 시작
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">또는</span>
+          <input
+            ref={folderInputRef}
+            type="file"
+            // @ts-expect-error webkitdirectory is non-standard but widely supported
+            webkitdirectory=""
+            multiple
+            className="hidden"
+            onChange={handleFolderSelect}
+            disabled={isRunning}
+          />
+          <Button
+            variant="outline"
+            onClick={() => folderInputRef.current?.click()}
+            disabled={isRunning}
+          >
+            <FolderOpen className="mr-2 h-4 w-4" /> 로컬 폴더 선택
+          </Button>
+        </div>
       </div>
 
       {status && (

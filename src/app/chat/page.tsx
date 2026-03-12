@@ -38,6 +38,7 @@ export default function ChatPage() {
   const [streaming, setStreaming] = useState('');
   const [streamingAttachments, setStreamingAttachments] = useState<Attachment[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingType, setLoadingType] = useState<'chat' | 'embedding'>('chat');
 
   const loadMessages = useCallback(async (id: string) => {
     setConversationId(id);
@@ -60,6 +61,7 @@ export default function ChatPage() {
     if (file && message.includes('embedding')) {
       const formData = new FormData();
       formData.append('file', file);
+      setLoadingType('embedding');
       setLoading(true);
       const res = await fetch('/api/embed', { method: 'POST', body: formData });
       const result = await res.json();
@@ -78,6 +80,7 @@ export default function ChatPage() {
     }
 
     setMessages((prev) => [...prev, { id: crypto.randomUUID(), role: 'user', content: message }]);
+    setLoadingType('chat');
     setLoading(true);
     setStreaming('');
     setStreamingAttachments([]);
@@ -135,6 +138,7 @@ export default function ChatPage() {
           streamingContent={streaming || undefined}
           streamingAttachments={streamingAttachments.length > 0 ? streamingAttachments : undefined}
           loading={loading}
+          loadingType={loadingType}
         />
         <ChatInput onSend={handleSend} disabled={loading} />
       </div>

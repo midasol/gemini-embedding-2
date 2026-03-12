@@ -14,7 +14,7 @@ export async function GET() {
 
     return NextResponse.json(result);
   } catch (err) {
-    console.error('GET /api/conversations error:', err);
+    console.error('GET /api/conversations error:', err instanceof Error ? err.message : 'Unknown error');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(conv);
   } catch (err) {
-    console.error('POST /api/conversations error:', err);
+    console.error('POST /api/conversations error:', err instanceof Error ? err.message : 'Unknown error');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -48,7 +48,7 @@ export async function DELETE(req: NextRequest) {
     await db.delete(conversations).where(eq(conversations.id, id));
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('DELETE /api/conversations error:', err);
+    console.error('DELETE /api/conversations error:', err instanceof Error ? err.message : 'Unknown error');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
