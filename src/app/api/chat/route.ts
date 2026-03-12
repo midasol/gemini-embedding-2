@@ -2,6 +2,7 @@ import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { NextRequest, NextResponse } from 'next/server';
 import { searchSimilar, buildRAGPrompt } from '@/lib/rag';
+import { env } from '@/lib/env';
 import { db } from '@/lib/db';
 import { messages, conversations } from '@/lib/schema';
 import { eq } from 'drizzle-orm';
@@ -46,8 +47,16 @@ export async function POST(req: NextRequest) {
       content: message,
     });
 
-    const attachments = searchResults
+    const mediaResults = searchResults
       .filter((r) => ['image', 'video'].includes(r.fileType))
+      .sort((a, b) => b.similarity - a.similarity);
+
+    const SIMILARITY_RATIO = 0.95;
+    const topSimilarity = mediaResults[0]?.similarity ?? 0;
+    const threshold = topSimilarity * SIMILARITY_RATIO;
+
+    const attachments = mediaResults
+      .filter((r) => r.similarity >= threshold)
       .map((r) => ({
         type: r.fileType,
         path: r.filePath,
@@ -56,7 +65,7 @@ export async function POST(req: NextRequest) {
       }));
 
     const result = streamText({
-      model: google('gemini-3.1-pro-preview'),
+      model: google(env.GEMINI_CHAT_MODEL),
       messages: [
         ...chatMessages,
         { role: 'user', content: ragPrompt },

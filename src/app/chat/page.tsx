@@ -123,20 +123,18 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-background">
       <ChatSidebar
         activeId={conversationId}
         onSelect={loadMessages}
         onNew={() => { setConversationId(null); setMessages([]); }}
       />
-      <div className="flex-1 flex flex-col">
-        <header className="border-b px-6 py-3 font-semibold">
-          Gemini RAG Chat
-        </header>
+      <div className="flex-1 flex flex-col bg-card">
         <ChatWindow
           messages={messages}
           streamingContent={streaming || undefined}
           streamingAttachments={streamingAttachments.length > 0 ? streamingAttachments : undefined}
+          loading={loading}
         />
         <ChatInput onSend={handleSend} disabled={loading} />
       </div>

@@ -8,7 +8,7 @@ export async function generateEmbedding(
   taskType?: string
 ): Promise<number[]> {
   const response = await genai.models.embedContent({
-    model: 'gemini-embedding-2-preview',
+    model: env.GEMINI_EMBEDDING_MODEL,
     contents: Array.isArray(contents) ? contents : [contents],
     config: {
       outputDimensionality: 3072,
@@ -28,7 +28,7 @@ export async function generateContentSummary(
   mimeType: string
 ): Promise<string> {
   const response = await genai.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
+    model: env.GEMINI_CHAT_MODEL,
     contents: [
       { text: '이 파일의 내용을 상세하게 설명해주세요. 텍스트, 색상, 형태, 특징 등을 포함하세요.' },
       { inlineData: { mimeType, data: fileData } },
