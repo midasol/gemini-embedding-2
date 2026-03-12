@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
 
   // Stream response
   const result = streamText({
-    model: google('gemini-2.5-pro-preview-06-05'),
+    model: google('gemini-3.1-pro-preview'),
     messages: [
       ...chatMessages,
       { role: 'user', content: ragPrompt },
