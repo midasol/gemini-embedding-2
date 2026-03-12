@@ -1,13 +1,29 @@
 import { Storage } from '@google-cloud/storage';
 import path from 'path';
+import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid';
 
-const storage = new Storage({
-  projectId: process.env.GCS_PROJECT_ID,
-  keyFilename: process.env.GOOGLE_APPLICATION_CREDENTIALS,
-});
+function createStorage() {
+  const keyFilePath = process.env.GOOGLE_APPLICATION_CREDENTIALS
+    ? path.resolve(process.env.GOOGLE_APPLICATION_CREDENTIALS)
+    : undefined;
 
-const bucket = storage.bucket(process.env.GCS_BUCKET_NAME!);
+  if (keyFilePath && fs.existsSync(keyFilePath)) {
+    const credentials = JSON.parse(fs.readFileSync(keyFilePath, 'utf-8'));
+    return new Storage({
+      projectId: process.env.GCS_PROJECT_ID,
+      credentials,
+    });
+  }
+
+  return new Storage({
+    projectId: process.env.GCS_PROJECT_ID,
+  });
+}
+
+const storage = createStorage();
+const bucketName = process.env.GCS_BUCKET_NAME!;
+const bucket = storage.bucket(bucketName);
 
 export async function uploadToGCS(
   fileBuffer: Buffer,
@@ -15,17 +31,23 @@ export async function uploadToGCS(
   mimeType: string
 ): Promise<string> {
   const ext = path.extname(originalName);
-  const fileName = `uploads/${uuidv4()}${ext}`;
-  const file = bucket.file(fileName);
+  const gcsPath = `uploads/${uuidv4()}${ext}`;
+  const file = bucket.file(gcsPath);
 
   await file.save(fileBuffer, {
     metadata: { contentType: mimeType },
   });
 
-  const [signedUrl] = await file.getSignedUrl({
-    action: 'read',
-    expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
+  // Return internal path (served via /api/files proxy)
+  return `/api/files/${encodeURIComponent(gcsPath)}`;
+}
 
-  return signedUrl;
+export async function downloadFromGCS(gcsPath: string): Promise<{ buffer: Buffer; contentType: string }> {
+  const file = bucket.file(gcsPath);
+  const [buffer] = await file.download();
+  const [metadata] = await file.getMetadata();
+  return {
+    buffer: Buffer.from(buffer),
+    contentType: (metadata.contentType as string) ?? 'application/octet-stream',
+  };
 }
