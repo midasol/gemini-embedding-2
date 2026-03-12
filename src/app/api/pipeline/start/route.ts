@@ -5,16 +5,49 @@ import { resetStatus, updateStatus, addLog, getStatus } from '@/lib/pipeline-sta
 import fs from 'fs/promises';
 import path from 'path';
 
+// Allowed base directories for pipeline processing
+const ALLOWED_BASE_DIRS = [
+  path.resolve('./data'),
+  path.resolve('./uploads'),
+];
+
+function isPathAllowed(sourcePath: string): boolean {
+  const resolved = path.resolve(sourcePath);
+  return ALLOWED_BASE_DIRS.some((base) => resolved.startsWith(base + path.sep) || resolved === base);
+}
+
 export async function POST(req: NextRequest) {
-  const { sourcePath } = await req.json();
+  try {
+    const body = await req.json();
+    const { sourcePath } = body;
 
-  if (!sourcePath) {
-    return NextResponse.json({ error: 'sourcePath required' }, { status: 400 });
+    if (!sourcePath || typeof sourcePath !== 'string') {
+      return NextResponse.json({ error: 'sourcePath is required and must be a string' }, { status: 400 });
+    }
+
+    if (!isPathAllowed(sourcePath)) {
+      return NextResponse.json(
+        { error: `Access denied: sourcePath must be under ${ALLOWED_BASE_DIRS.join(' or ')}` },
+        { status: 403 }
+      );
+    }
+
+    const resolved = path.resolve(sourcePath);
+    try {
+      await fs.access(resolved);
+    } catch {
+      return NextResponse.json({ error: 'sourcePath does not exist' }, { status: 404 });
+    }
+
+    processFiles(resolved).catch((err) => {
+      console.error('Pipeline failed:', err);
+      updateStatus({ running: false, currentFile: '' });
+    });
+
+    return NextResponse.json({ started: true });
+  } catch {
+    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 });
   }
-
-  processFiles(sourcePath).catch(console.error);
-
-  return NextResponse.json({ started: true });
 }
 
 async function processFiles(sourcePath: string) {

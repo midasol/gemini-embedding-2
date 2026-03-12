@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
+import { env } from './env';
 
-export const genai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
+export const genai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
 
 export async function generateEmbedding(
   contents: string | Array<{ inlineData: { mimeType: string; data: string } }>,
@@ -14,7 +15,12 @@ export async function generateEmbedding(
       ...(taskType && { taskType }),
     },
   });
-  return response.embeddings![0].values!;
+
+  const embedding = response.embeddings?.[0]?.values;
+  if (!embedding) {
+    throw new Error('Embedding response did not contain values');
+  }
+  return embedding;
 }
 
 export async function generateContentSummary(

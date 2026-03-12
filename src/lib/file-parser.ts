@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const TEXT_EXTENSIONS = ['.txt', '.md', '.csv', '.json', '.xml', '.html'];
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp'];
 const AUDIO_EXTENSIONS = ['.mp3', '.wav', '.ogg', '.flac', '.m4a'];
@@ -33,7 +32,8 @@ export function getMimeType(fileName: string): string {
 }
 
 export async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  const { PDFParse } = await import('pdf-parse') as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { PDFParse } = await import('pdf-parse') as { PDFParse: any };
   const parser = new PDFParse({ data: new Uint8Array(buffer) });
   await parser.load();
   const result = await parser.getText();
