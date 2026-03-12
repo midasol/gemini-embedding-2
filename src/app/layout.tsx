@@ -28,6 +28,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <footer className="border-t px-6 py-2 text-sm text-muted-foreground">
+          <a href="/admin/pipeline" className="hover:underline">Admin: 배치 파이프라인 관리 →</a>
+        </footer>
       </body>
     </html>
   );
