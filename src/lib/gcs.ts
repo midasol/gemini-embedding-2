@@ -22,7 +22,10 @@ export async function uploadToGCS(
     metadata: { contentType: mimeType },
   });
 
-  await file.makePublic();
+  const [signedUrl] = await file.getSignedUrl({
+    action: 'read',
+    expires: Date.now() + 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
 
-  return `https://storage.googleapis.com/${process.env.GCS_BUCKET_NAME}/${fileName}`;
+  return signedUrl;
 }
