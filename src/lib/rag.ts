@@ -31,7 +31,7 @@ export async function searchSimilar(query: string, topK = 5): Promise<SearchResu
     LIMIT ${topK}
   `);
 
-  return results.rows as SearchResult[];
+  return results as unknown as SearchResult[];
 }
 
 export function buildRAGPrompt(query: string, results: SearchResult[]): string {
