@@ -39,7 +39,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             onClick={() => setFile(null)}
             className="text-xs text-muted-foreground hover:text-destructive transition-colors"
           >
-            삭제
+            Remove
           </button>
         </div>
       )}

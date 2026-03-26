@@ -22,7 +22,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const title = typeof body.title === 'string' ? body.title.slice(0, 200) : '새 대화';
+    const title = typeof body.title === 'string' ? body.title.slice(0, 200) : 'New Chat';
 
     const [conv] = await db
       .insert(conversations)

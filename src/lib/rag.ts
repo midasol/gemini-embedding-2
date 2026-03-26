@@ -117,29 +117,29 @@ export async function searchSimilar(query: string, topK = 5): Promise<SearchResu
 
 export function buildRAGPrompt(query: string, results: SearchResult[]): string {
   if (results.length === 0) {
-    return `당신은 RAG 어시스턴트입니다.
-검색된 문서가 없습니다. 사용자의 질문에 대해 "관련 문서를 찾을 수 없습니다. 먼저 관련 파일을 임베딩해 주세요."라고 안내하세요.
+    return `You are a RAG assistant.
+No relevant documents were found. Please inform the user: "No relevant documents found. Please embed related files first."
 
-## 사용자 질문:
+## User Question:
 ${query}`;
   }
 
   const context = results.map((r, i) => {
     const parts: string[] = [];
     if (r.chunkText) parts.push(r.chunkText);
-    if (r.contentSummary) parts.push(`[시각적 설명] ${r.contentSummary}`);
+    if (r.contentSummary) parts.push(`[Visual Description] ${r.contentSummary}`);
     const content = parts.join('\n\n') || '';
-    const fileInfo = `[파일: ${r.fileName}, 유형: ${r.fileType}, 유사도: ${(r.similarity * 100).toFixed(1)}%]`;
-    return `--- 검색결과 ${i + 1} ${fileInfo} ---\n${content}`;
+    const fileInfo = `[File: ${r.fileName}, Type: ${r.fileType}, Similarity: ${(r.similarity * 100).toFixed(1)}%]`;
+    return `--- Search Result ${i + 1} ${fileInfo} ---\n${content}`;
   }).join('\n\n');
 
-  return `당신은 검색된 문서를 기반으로 질문에 답하는 RAG 어시스턴트입니다.
-검색 결과에 이미지 파일이 있다면, 해당 파일의 설명과 파일명을 함께 안내해주세요.
-검색 결과에 없는 내용은 "검색 결과에서 해당 정보를 찾을 수 없습니다"라고 답하세요.
+  return `You are a RAG assistant that answers questions based on retrieved documents.
+If the search results contain image files, include the file description and filename in your response.
+For information not found in the search results, respond with "The requested information was not found in the search results."
 
-## 검색된 문서:
+## Retrieved Documents:
 ${context}
 
-## 사용자 질문:
+## User Question:
 ${query}`;
 }

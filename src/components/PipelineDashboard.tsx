@@ -76,24 +76,24 @@ export function PipelineDashboard() {
 
   return (
     <div className="max-w-3xl mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold">배치 Embedding 파이프라인</h1>
+      <h1 className="text-2xl font-bold">Batch Embedding Pipeline</h1>
 
       <div className="space-y-3">
         <div className="flex gap-2">
           <Input
             value={sourcePath}
             onChange={(e) => setSourcePath(e.target.value)}
-            placeholder="GCS 경로 (예: gs://bucket/prefix)"
+            placeholder="GCS path (e.g. gs://bucket/prefix)"
             className="flex-1"
             disabled={isRunning}
           />
           <Button onClick={startPipeline} disabled={!sourcePath || isRunning}>
-            <Play className="mr-2 h-4 w-4" /> 시작
+            <Play className="mr-2 h-4 w-4" /> Start
           </Button>
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">또는</span>
+          <span className="text-sm text-muted-foreground">or</span>
           <input
             ref={folderInputRef}
             type="file"
@@ -109,7 +109,7 @@ export function PipelineDashboard() {
             onClick={() => folderInputRef.current?.click()}
             disabled={isRunning}
           >
-            <FolderOpen className="mr-2 h-4 w-4" /> 로컬 폴더 선택
+            <FolderOpen className="mr-2 h-4 w-4" /> Select Local Folder
           </Button>
         </div>
       </div>
@@ -117,24 +117,24 @@ export function PipelineDashboard() {
       {status && (
         <Card className="p-6 space-y-4">
           <div className="flex items-center gap-3">
-            <span className="font-medium">상태:</span>
+            <span className="font-medium">Status:</span>
             <Badge variant={status.running ? 'default' : 'secondary'}>
-              {status.running ? '진행 중' : '완료'}
+              {status.running ? 'In Progress' : 'Completed'}
             </Badge>
             {status.currentFile && (
-              <span className="text-sm text-muted-foreground">현재: {status.currentFile}</span>
+              <span className="text-sm text-muted-foreground">Current: {status.currentFile}</span>
             )}
           </div>
 
           <Progress value={progress} className="h-3" />
           <p className="text-sm text-muted-foreground">
-            {status.completed} / {status.total} 파일 ({progress.toFixed(0)}%)
+            {status.completed} / {status.total} files ({progress.toFixed(0)}%)
           </p>
 
           <div className="flex gap-4 text-sm">
-            <span className="text-green-600">성공: {status.succeeded}</span>
-            <span className="text-red-600">실패: {status.failed}</span>
-            <span className="text-muted-foreground">대기: {status.total - status.completed}</span>
+            <span className="text-green-600">Success: {status.succeeded}</span>
+            <span className="text-red-600">Failed: {status.failed}</span>
+            <span className="text-muted-foreground">Pending: {status.total - status.completed}</span>
           </div>
 
           <ScrollArea className="h-48 border rounded p-3">

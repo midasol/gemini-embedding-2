@@ -23,7 +23,7 @@ export const embeddings = pgTable(
 
 export const conversations = pgTable('conversations', {
   id: uuid('id').primaryKey().defaultRandom(),
-  title: varchar('title', { length: 200 }).notNull().default('새 대화'),
+  title: varchar('title', { length: 200 }).notNull().default('New Chat'),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });

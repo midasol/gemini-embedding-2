@@ -41,7 +41,7 @@ async function main() {
     await sql`
       CREATE TABLE IF NOT EXISTS conversations (
         id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        title VARCHAR(200) NOT NULL DEFAULT '새 대화',
+        title VARCHAR(200) NOT NULL DEFAULT 'New Chat',
         created_at TIMESTAMP DEFAULT NOW(),
         updated_at TIMESTAMP DEFAULT NOW()
       )

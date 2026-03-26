@@ -68,7 +68,7 @@ function UserMessage({ content }: { content: string }) {
 }
 
 function ThinkingIndicator({ type = 'chat' }: { type?: 'chat' | 'embedding' }) {
-  const label = type === 'embedding' ? '임베딩 처리 중...' : '검색하고 있어요...';
+  const label = type === 'embedding' ? 'Processing embedding...' : 'Searching...';
   return (
     <div className="flex items-start gap-3">
       <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -121,7 +121,7 @@ export function ChatWindow({ messages, streamingContent, streamingAttachments, l
             </div>
             <h2 className="text-lg font-semibold text-foreground mb-2">Gemini RAG Chat</h2>
             <p className="text-sm text-muted-foreground max-w-md">
-              질문을 입력하면 임베딩된 데이터를 검색하여 답변을 생성합니다.
+              Enter a question to search embedded data and generate an answer.
             </p>
           </div>
         )}

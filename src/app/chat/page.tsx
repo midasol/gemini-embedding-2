@@ -68,7 +68,7 @@ export default function ChatPage() {
       setMessages((prev) => [
         ...prev,
         { id: crypto.randomUUID(), role: 'user', content: `${file.name}\n${message}` },
-        { id: crypto.randomUUID(), role: 'assistant', content: `파일 '${result.fileName}'이 성공적으로 임베딩되었습니다. (${result.chunksCreated}개 청크 생성)` },
+        { id: crypto.randomUUID(), role: 'assistant', content: `File '${result.fileName}' has been successfully embedded. (${result.chunksCreated} chunks created)` },
       ]);
       setLoading(false);
       return;

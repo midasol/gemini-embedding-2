@@ -1,64 +1,64 @@
-# API 레퍼런스
+# API Reference
 
-Gemini RAG 시스템의 모든 API 엔드포인트에 대한 상세 문서입니다.
-
----
-
-## 목차
-
-1. [채팅 API](#1-채팅-api)
-2. [임베딩 API](#2-임베딩-api)
-3. [파이프라인 API](#3-파이프라인-api)
-4. [대화 관리 API](#4-대화-관리-api)
-5. [파일 프록시 API](#5-파일-프록시-api)
-6. [에러 코드](#6-에러-코드)
-7. [스트리밍 프로토콜](#7-스트리밍-프로토콜)
+Detailed documentation for all API endpoints of the Gemini RAG system.
 
 ---
 
-## 1. 채팅 API
+## Table of Contents
+
+1. [Chat API](#1-chat-api)
+2. [Embedding API](#2-embedding-api)
+3. [Pipeline API](#3-pipeline-api)
+4. [Conversation Management API](#4-conversation-management-api)
+5. [File Proxy API](#5-file-proxy-api)
+6. [Error Codes](#6-error-codes)
+7. [Streaming Protocol](#7-streaming-protocol)
+
+---
+
+## 1. Chat API
 
 ### `POST /api/chat`
 
-RAG 기반 채팅 질의를 수행하고 스트리밍 응답을 반환합니다.
+Performs a RAG-based chat query and returns a streaming response.
 
-**요청 본문 (JSON)**
+**Request Body (JSON)**
 
-| 필드 | 타입 | 필수 | 설명 |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `message` | `string` | O | 사용자 메시지 (최대 10,000자) |
-| `conversationId` | `string` | O | 대화 UUID |
+| `message` | `string` | Yes | User message (max 10,000 characters) |
+| `conversationId` | `string` | Yes | Conversation UUID |
 
-**요청 예제**
+**Request Example**
 
 ```bash
 curl -X POST http://localhost:3000/api/chat \
   -H "Content-Type: application/json" \
   -d '{
-    "message": "이 프로젝트의 아키텍처를 설명해주세요",
+    "message": "Explain the architecture of this project",
     "conversationId": "550e8400-e29b-41d4-a716-446655440000"
   }'
 ```
 
-**응답**: `ReadableStream` (text/plain; charset=utf-8)
+**Response**: `ReadableStream` (text/plain; charset=utf-8)
 
-스트리밍 응답은 두 부분으로 구성됩니다:
+The streaming response consists of two parts:
 
-1. **첨부파일 프리픽스** (검색된 관련 파일이 있을 경우):
+1. **Attachment prefix** (if related files are found):
    ```
    __ATTACHMENTS__[{"fileName":"doc.pdf","filePath":"path/to/doc.pdf","fileType":"pdf","similarity":0.85}]__END_ATTACHMENTS__
    ```
 
-2. **텍스트 스트림**: LLM 생성 텍스트가 청크 단위로 전송됩니다.
+2. **Text stream**: LLM-generated text is sent in chunks.
 
-**JavaScript (fetch) 예제**
+**JavaScript (fetch) Example**
 
 ```javascript
 const response = await fetch('/api/chat', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({
-    message: '벡터 검색이 어떻게 동작하나요?',
+    message: 'How does vector search work?',
     conversationId: '550e8400-e29b-41d4-a716-446655440000'
   })
 });
@@ -73,7 +73,7 @@ while (true) {
   fullText += decoder.decode(value, { stream: true });
 }
 
-// 첨부파일 파싱
+// Parse attachments
 const attachmentMatch = fullText.match(
   /__ATTACHMENTS__(.*?)__END_ATTACHMENTS__/
 );
@@ -85,36 +85,36 @@ if (attachmentMatch) {
 }
 ```
 
-**에러 응답**
+**Error Responses**
 
-| 상태 코드 | 조건 |
+| Status Code | Condition |
 |---|---|
-| `400` | `message` 누락, 빈 문자열, 10,000자 초과 |
-| `400` | `conversationId` 누락 또는 UUID 형식 불일치 |
-| `500` | 내부 서버 오류 (Gemini API 실패 등) |
+| `400` | `message` missing, empty string, or exceeds 10,000 characters |
+| `400` | `conversationId` missing or UUID format mismatch |
+| `500` | Internal server error (e.g., Gemini API failure) |
 
 ---
 
-## 2. 임베딩 API
+## 2. Embedding API
 
 ### `POST /api/embed`
 
-단일 파일을 임베딩하여 벡터 DB에 저장합니다.
+Embeds a single file and stores it in the vector DB.
 
-**요청 본문**: `multipart/form-data`
+**Request Body**: `multipart/form-data`
 
-| 필드 | 타입 | 필수 | 설명 |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `file` | `File` | O | 임베딩할 파일 (최대 100MB) |
+| `file` | `File` | Yes | File to embed (max 100MB) |
 
-**요청 예제**
+**Request Example**
 
 ```bash
 curl -X POST http://localhost:3000/api/embed \
   -F "file=@./document.pdf"
 ```
 
-**응답 (200 OK)**
+**Response (200 OK)**
 
 ```json
 {
@@ -125,54 +125,54 @@ curl -X POST http://localhost:3000/api/embed \
 }
 ```
 
-**파일 타입별 처리**
+**Processing by File Type**
 
-| 파일 타입 | 처리 방식 | 청킹 |
+| File Type | Processing Method | Chunking |
 |---|---|---|
-| 텍스트 (.txt, .md, .csv 등) | 텍스트 청킹 후 각 청크 임베딩 | 2000자 / 200자 오버랩 |
-| PDF (.pdf) | pdf-lib로 6페이지 분할 후 멀티모달 임베딩 | 6페이지 단위 |
-| 이미지 (.png, .jpg) | base64 멀티모달 임베딩 + AI 요약 | 단일 청크 |
-| 오디오 (.mp3, .wav) | base64 멀티모달 임베딩 + AI 요약 | 단일 청크 |
-| 비디오 (.mp4, .mov) | base64 멀티모달 임베딩 + AI 요약 | 단일 청크 |
+| Text (.txt, .md, .csv, etc.) | Text chunking followed by embedding each chunk | 2000 chars / 200 char overlap |
+| PDF (.pdf) | Split into 6-page segments via pdf-lib, then multimodal embedding | 6-page units |
+| Image (.png, .jpg) | Base64 multimodal embedding + AI summary | Single chunk |
+| Audio (.mp3, .wav) | Base64 multimodal embedding + AI summary | Single chunk |
+| Video (.mp4, .mov) | Base64 multimodal embedding + AI summary | Single chunk |
 
-**에러 응답**
+**Error Responses**
 
-| 상태 코드 | 조건 |
+| Status Code | Condition |
 |---|---|
-| `400` | 파일 누락, 지원하지 않는 파일 형식 |
-| `413` | 파일 크기 100MB 초과 |
-| `500` | 임베딩 처리 실패 |
+| `400` | File missing or unsupported file format |
+| `413` | File size exceeds 100MB |
+| `500` | Embedding processing failure |
 
 ---
 
-## 3. 파이프라인 API
+## 3. Pipeline API
 
 ### `POST /api/pipeline/start`
 
-배치 임베딩 파이프라인을 시작합니다.
+Starts a batch embedding pipeline.
 
-**요청 본문 (JSON)**
+**Request Body (JSON)**
 
-| 필드 | 타입 | 필수 | 설명 |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `source` | `string` | O | `"local"` 또는 `"gcs"` |
-| `path` | `string` | O | 디렉토리 경로 (로컬: `./data`, `./uploads` 하위만 허용 / GCS: `gs://bucket/path`) |
+| `source` | `string` | Yes | `"local"` or `"gcs"` |
+| `path` | `string` | Yes | Directory path (local: only `./data` and `./uploads` subdirectories allowed / GCS: `gs://bucket/path`) |
 
-**요청 예제**
+**Request Example**
 
 ```bash
-# 로컬 디렉토리
+# Local directory
 curl -X POST http://localhost:3000/api/pipeline/start \
   -H "Content-Type: application/json" \
   -d '{"source": "local", "path": "./data/documents"}'
 
-# GCS 경로
+# GCS path
 curl -X POST http://localhost:3000/api/pipeline/start \
   -H "Content-Type: application/json" \
   -d '{"source": "gcs", "path": "gs://my-bucket/embeddings"}'
 ```
 
-**응답 (202 Accepted)**
+**Response (202 Accepted)**
 
 ```json
 {
@@ -182,29 +182,29 @@ curl -X POST http://localhost:3000/api/pipeline/start \
 }
 ```
 
-**에러 응답**
+**Error Responses**
 
-| 상태 코드 | 조건 |
+| Status Code | Condition |
 |---|---|
-| `400` | `source` 또는 `path` 누락, 잘못된 `source` 값 |
-| `403` | 로컬 경로가 허용 디렉토리 외부 |
-| `404` | 경로에 파일이 없음 |
-| `409` | 이미 실행 중인 파이프라인 존재 |
-| `500` | 파이프라인 시작 실패 |
+| `400` | `source` or `path` missing, invalid `source` value |
+| `403` | Local path is outside the allowed directories |
+| `404` | No files found at the specified path |
+| `409` | A pipeline is already running |
+| `500` | Pipeline start failure |
 
 ---
 
 ### `POST /api/pipeline/upload`
 
-브라우저에서 폴더를 업로드하여 파이프라인을 실행합니다.
+Uploads a folder from the browser and runs the pipeline.
 
-**요청 본문**: `multipart/form-data`
+**Request Body**: `multipart/form-data`
 
-| 필드 | 타입 | 필수 | 설명 |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `files` | `File[]` | O | 업로드할 파일 목록 |
+| `files` | `File[]` | Yes | List of files to upload |
 
-**응답 (202 Accepted)**
+**Response (202 Accepted)**
 
 ```json
 {
@@ -218,21 +218,21 @@ curl -X POST http://localhost:3000/api/pipeline/start \
 
 ### `GET /api/pipeline/status`
 
-파이프라인 진행 상태를 조회합니다. 클라이언트에서 폴링 방식으로 사용합니다.
+Retrieves the pipeline progress status. Used by the client in a polling manner.
 
-**쿼리 파라미터**
+**Query Parameters**
 
-| 파라미터 | 타입 | 필수 | 설명 |
+| Parameter | Type | Required | Description |
 |---|---|---|---|
-| `id` | `string` | O | 파이프라인 ID |
+| `id` | `string` | Yes | Pipeline ID |
 
-**요청 예제**
+**Request Example**
 
 ```bash
 curl "http://localhost:3000/api/pipeline/status?id=pipe_abc123"
 ```
 
-**응답 (200 OK)**
+**Response (200 OK)**
 
 ```json
 {
@@ -248,36 +248,36 @@ curl "http://localhost:3000/api/pipeline/status?id=pipe_abc123"
 }
 ```
 
-**상태 값 (`status`)**
+**Status Values (`status`)**
 
-| 값 | 설명 |
+| Value | Description |
 |---|---|
-| `"pending"` | 대기 중 |
-| `"processing"` | 처리 중 |
-| `"completed"` | 완료 |
-| `"failed"` | 실패 |
+| `"pending"` | Pending |
+| `"processing"` | Processing |
+| `"completed"` | Completed |
+| `"failed"` | Failed |
 
 ---
 
-## 4. 대화 관리 API
+## 4. Conversation Management API
 
 ### `GET /api/conversations`
 
-모든 대화 목록을 조회합니다.
+Retrieves a list of all conversations.
 
-**요청 예제**
+**Request Example**
 
 ```bash
 curl http://localhost:3000/api/conversations
 ```
 
-**응답 (200 OK)**
+**Response (200 OK)**
 
 ```json
 [
   {
     "id": "550e8400-e29b-41d4-a716-446655440000",
-    "title": "RAG 시스템에 대해",
+    "title": "About the RAG system",
     "createdAt": "2026-03-10T08:00:00.000Z",
     "updatedAt": "2026-03-10T09:30:00.000Z"
   }
@@ -288,28 +288,28 @@ curl http://localhost:3000/api/conversations
 
 ### `POST /api/conversations`
 
-새 대화를 생성합니다.
+Creates a new conversation.
 
-**요청 본문 (JSON)**
+**Request Body (JSON)**
 
-| 필드 | 타입 | 필수 | 설명 |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `title` | `string` | X | 대화 제목 (기본: "새 대화") |
+| `title` | `string` | No | Conversation title (default: "New Conversation") |
 
-**요청 예제**
+**Request Example**
 
 ```bash
 curl -X POST http://localhost:3000/api/conversations \
   -H "Content-Type: application/json" \
-  -d '{"title": "Gemini API 분석"}'
+  -d '{"title": "Gemini API Analysis"}'
 ```
 
-**응답 (201 Created)**
+**Response (201 Created)**
 
 ```json
 {
   "id": "660e9500-f30c-52e5-b827-557766551111",
-  "title": "Gemini API 분석",
+  "title": "Gemini API Analysis",
   "createdAt": "2026-03-12T10:00:00.000Z",
   "updatedAt": "2026-03-12T10:00:00.000Z"
 }
@@ -319,15 +319,15 @@ curl -X POST http://localhost:3000/api/conversations \
 
 ### `DELETE /api/conversations`
 
-대화와 관련 메시지를 삭제합니다.
+Deletes a conversation and its associated messages.
 
-**요청 본문 (JSON)**
+**Request Body (JSON)**
 
-| 필드 | 타입 | 필수 | 설명 |
+| Field | Type | Required | Description |
 |---|---|---|---|
-| `id` | `string` | O | 삭제할 대화 UUID |
+| `id` | `string` | Yes | UUID of the conversation to delete |
 
-**요청 예제**
+**Request Example**
 
 ```bash
 curl -X DELETE http://localhost:3000/api/conversations \
@@ -335,7 +335,7 @@ curl -X DELETE http://localhost:3000/api/conversations \
   -d '{"id": "550e8400-e29b-41d4-a716-446655440000"}'
 ```
 
-**응답 (200 OK)**
+**Response (200 OK)**
 
 ```json
 {
@@ -345,66 +345,66 @@ curl -X DELETE http://localhost:3000/api/conversations \
 
 ---
 
-## 5. 파일 프록시 API
+## 5. File Proxy API
 
 ### `GET /api/files/[...path]`
 
-GCS에 저장된 파일을 프록시하여 클라이언트에 제공합니다. 경로 순회 공격을 방지합니다.
+Proxies files stored in GCS to the client. Prevents path traversal attacks.
 
-**요청 예제**
+**Request Example**
 
 ```bash
 curl http://localhost:3000/api/files/documents/report.pdf
 ```
 
-**응답**
+**Response**
 
-- 성공 시: 파일 바이너리 데이터 (적절한 `Content-Type` 헤더 포함)
-- `403 Forbidden`: 경로 순회 감지 또는 허용되지 않은 경로
-- `404 Not Found`: 파일이 GCS에 존재하지 않음
+- On success: File binary data (with appropriate `Content-Type` header)
+- `403 Forbidden`: Path traversal detected or unauthorized path
+- `404 Not Found`: File does not exist in GCS
 
-**보안 메커니즘**
+**Security Mechanisms**
 
-1. 경로 정규화 (`path.normalize()`)
-2. `..` 포함 경로 차단
-3. `ALLOWED_GCS_PREFIX` 검증으로 허용된 버킷/경로만 접근
+1. Path normalization (`path.normalize()`)
+2. Blocking paths containing `..`
+3. `ALLOWED_GCS_PREFIX` validation to restrict access to allowed buckets/paths only
 
 ---
 
-## 6. 에러 코드
+## 6. Error Codes
 
-모든 API는 일관된 에러 응답 형식을 사용합니다:
+All APIs use a consistent error response format:
 
 ```json
 {
-  "error": "에러 메시지"
+  "error": "Error message"
 }
 ```
 
-### 공통 에러 코드
+### Common Error Codes
 
-| HTTP 상태 코드 | 의미 | 일반적인 원인 |
+| HTTP Status Code | Meaning | Common Causes |
 |---|---|---|
-| `400` | Bad Request | 필수 파라미터 누락, 유효하지 않은 값, 형식 오류 |
-| `403` | Forbidden | 경로 순회 시도, 허용되지 않은 경로 접근 |
-| `404` | Not Found | 파일/대화를 찾을 수 없음 |
-| `409` | Conflict | 이미 실행 중인 파이프라인 |
-| `413` | Payload Too Large | 파일 크기 100MB 초과 |
-| `500` | Internal Server Error | Gemini API 오류, DB 오류, 예상치 못한 오류 |
+| `400` | Bad Request | Missing required parameters, invalid values, format errors |
+| `403` | Forbidden | Path traversal attempt, unauthorized path access |
+| `404` | Not Found | File/conversation not found |
+| `409` | Conflict | A pipeline is already running |
+| `413` | Payload Too Large | File size exceeds 100MB |
+| `500` | Internal Server Error | Gemini API error, DB error, unexpected error |
 
 ---
 
-## 7. 스트리밍 프로토콜
+## 7. Streaming Protocol
 
-`/api/chat` 엔드포인트는 커스텀 스트리밍 프로토콜을 사용합니다.
+The `/api/chat` endpoint uses a custom streaming protocol.
 
-### 응답 구조
+### Response Structure
 
 ```
-__ATTACHMENTS__<JSON 배열>__END_ATTACHMENTS__<LLM 생성 텍스트 스트림>
+__ATTACHMENTS__<JSON array>__END_ATTACHMENTS__<LLM-generated text stream>
 ```
 
-### 첨부파일 프리픽스 형식
+### Attachment Prefix Format
 
 ```
 __ATTACHMENTS__[
@@ -423,30 +423,30 @@ __ATTACHMENTS__[
 ]__END_ATTACHMENTS__
 ```
 
-### 첨부파일 객체 스키마
+### Attachment Object Schema
 
-| 필드 | 타입 | 설명 |
+| Field | Type | Description |
 |---|---|---|
-| `fileName` | `string` | 파일 이름 |
-| `filePath` | `string` | GCS 내 파일 경로 (/api/files/ 프록시 경로로 사용) |
-| `fileType` | `string` | 파일 타입 (pdf, image, audio, video, text) |
-| `similarity` | `number` | 코사인 유사도 점수 (0~1) |
+| `fileName` | `string` | File name |
+| `filePath` | `string` | File path in GCS (used as /api/files/ proxy path) |
+| `fileType` | `string` | File type (pdf, image, audio, video, text) |
+| `similarity` | `number` | Cosine similarity score (0-1) |
 
-### 처리 순서
+### Processing Order
 
 ```mermaid
 flowchart LR
-    A["스트림 시작"] --> B{"첨부파일<br/>존재?"}
-    B -->|예| C["__ATTACHMENTS__<br/>JSON 배열<br/>__END_ATTACHMENTS__"]
-    C --> D["LLM 텍스트<br/>청크 스트리밍"]
-    B -->|아니오| D
-    D --> E["스트림 종료"]
-    E --> F["비동기 DB 저장<br/>(user + assistant 메시지)"]
+    A["Stream Start"] --> B{"Attachments<br/>Exist?"}
+    B -->|Yes| C["__ATTACHMENTS__<br/>JSON Array<br/>__END_ATTACHMENTS__"]
+    C --> D["LLM Text<br/>Chunk Streaming"]
+    B -->|No| D
+    D --> E["Stream End"]
+    E --> F["Async DB Save<br/>(user + assistant messages)"]
 ```
 
-### 클라이언트 파싱 로직
+### Client Parsing Logic
 
-1. 수신된 전체 텍스트에서 `__ATTACHMENTS__...__END_ATTACHMENTS__` 패턴 감지
-2. 해당 부분을 추출하여 JSON 파싱 -> 첨부파일 배열
-3. 나머지 텍스트를 LLM 응답으로 처리
-4. 첨부파일의 `filePath`를 `/api/files/{filePath}`로 변환하여 이미지 등 렌더링
+1. Detect the `__ATTACHMENTS__...__END_ATTACHMENTS__` pattern in the received full text
+2. Extract that section and parse the JSON -> attachment array
+3. Process the remaining text as the LLM response
+4. Convert attachment `filePath` to `/api/files/{filePath}` to render images, etc.
